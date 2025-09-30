@@ -1,6 +1,7 @@
 // src/api/expenseService.ts
 import api from "../api/api";
 import type { Expense, PagedResult, CreateExpensePayload, UpdateExpensePayload } from "../types/expense";
+import { getAccessToken } from "./authService";
 
 export const ExpenseService = {
   // GET /api/Expense/paged?page=1&pageSize=10&name=search
@@ -13,7 +14,11 @@ export const ExpenseService = {
 
   // GET /api/Expense
   getAll: async (): Promise<Expense[]> => {
-    const { data } = await api.get<Expense[]>("/api/Expense");
+    const token = getAccessToken();
+    console.log("[ExpenseService] getAll token:", token);
+    const { data } = await api.get<Expense[]>("/api/Expense", {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
     return data;
   },
 

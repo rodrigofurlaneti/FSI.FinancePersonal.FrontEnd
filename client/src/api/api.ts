@@ -13,8 +13,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
+    console.log("[api] request token:", token);
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("[api] Authorization header set:", config.headers.Authorization);
     }
     return config;
   },
@@ -25,19 +27,24 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status;
+    console.error("[api] response error", {
+      status,
+      url: error?.config?.url,
+      data: error?.response?.data,
+    });
+
     if (status === 401) {
-      // Remove token local
+      console.warn("[api] got 401 -> removing token and dispatching auth:logout");
       try {
         removeAccessToken();
       } catch (e) {
-        // ignore storage errors
+        console.error("[api] error removing token:", e);
       }
 
-      // Dispatch a global event so AuthContext (ou outro consumidor) trate o logout/redirecionamento
       try {
-        window.dispatchEvent(new CustomEvent("auth:logout"));
+        window.dispatchEvent(new CustomEvent("auth:logout", { detail: { url: error?.config?.url } }));
       } catch (e) {
-        // fallback: se CustomEvent não funcionar, usar location
+        console.error("[api] error dispatching auth:logout event:", e);
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }
