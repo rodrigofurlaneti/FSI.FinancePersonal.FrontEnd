@@ -1,5 +1,5 @@
 import React from "react";
-import { Expense } from "../../api/expenseService";
+import { Expense } from "../../types/expense";
 
 type Props = {
   items: Expense[];

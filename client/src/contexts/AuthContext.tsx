@@ -1,42 +1,74 @@
-import React, { createContext, useContext, useState } from "react";
-import { loginRequest } from "../api/authService";
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import { loginRequest, setAccessToken, removeAccessToken } from "../service/authService";
+import api from "../api/api";
 
 type AuthContextType = {
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
   isAuthenticated: boolean;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  login: async () => {},
+  logout: async () => {},
+});
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [token, setTokenState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("access_token");
+    } catch {
+      return null;
+    }
+  });
 
-  const [token, setToken] = useState<string | null>(localStorage.getItem("access_token"));
+  // sincroniza estado com localStorage em caso de mudança externa (ex: outra aba)
+  useEffect(() => {
+    const syncToken = () => {
+      try {
+        const storedToken = localStorage.getItem("access_token");
+        setTokenState(storedToken);
+      } catch {
+        setTokenState(null);
+      }
+    };
 
-  const login = async (email: string, password: string) => {
-    const data = await loginRequest({ email, password });
-    const t = data?.token;
-    if (!t) throw new Error(data?.message ?? "Token not received");
-    // temporário: armazenar em localStorage; em produção prefira cookie HttpOnly
-    localStorage.setItem("access_token", t);
-    setToken(t);
+    // escuta mudanças no localStorage (ex: em outra aba)
+    window.addEventListener("storage", syncToken);
+
+    return () => {
+      window.removeEventListener("storage", syncToken);
+    };
+  }, []);
+
+  const login = async (email: string, password: string, remember = false) => {
+    const token = await loginRequest({ email, password });
+    setAccessToken(token);
+    setTokenState(token);
   };
 
-  const logout = () => {
-    localStorage.removeItem("access_token");
-    setToken(null);
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch {
+      // ignore network errors
+    }
+    removeAccessToken();
+    setTokenState(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ token, login, logout, isAuthenticated: !!token }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      isAuthenticated: !!token,
+      login,
+      logout,
+    }),
+    [token]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-};
+export const useAuth = () => useContext(AuthContext);

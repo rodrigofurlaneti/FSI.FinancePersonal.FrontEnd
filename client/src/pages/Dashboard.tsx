@@ -1,16 +1,21 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ExpenseService } from "../api/expenseService";
+import { ExpenseService } from "../service/expenseService";
 import ExpensesDonut from "../components/Charts/ExpensesDonut";
+import "../styles/dashboard.css";
 
 export default function Dashboard() {
   console.log("Dashboard renderizado");
-  const last30 = useQuery(["expenses", "last30"], async () => {
-    const all = await ExpenseService.getAll();
-    // filtrar últimos 30 dias
-    const from = new Date();
-    from.setDate(from.getDate() - 30);
-    return all.filter(e => new Date(e.date) >= from);
+
+  const last30 = useQuery({
+    queryKey: ["expenses", "last30"],
+    queryFn: async () => {
+      const all = await ExpenseService.getAll();
+      // filtrar últimos 30 dias
+      const from = new Date();
+      from.setDate(from.getDate() - 30);
+      return all.filter(e => new Date(e.date) >= from);
+    }
   });
 
   const total30 = last30.data?.reduce((s, e) => s + e.amount, 0) ?? 0;
