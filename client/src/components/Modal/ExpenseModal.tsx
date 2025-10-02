@@ -1,15 +1,25 @@
-// src/components/Forms/ExpenseCategoryModal.tsx
 import React from "react";
-import ExpenseCategoryForm from "../Forms/ExpenseCategoryForm";
+import ExpenseForm from "../Forms/ExpenseForm";
+import type { CreateExpensePayload, Expense } from "../../types/expense";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 type Props = {
   show: boolean;
   onClose: () => void;
   onSaved: () => void;
-  id?: number;
+  editingExpenseId?: number;
+  createExpenseMutation: UseMutationResult<Expense, unknown, CreateExpensePayload, unknown>;
+  initialData?: Partial<CreateExpensePayload>;
 };
 
-export default function ExpenseCategoryModal({ show, onClose, onSaved, id }: Props) {
+export default function ExpenseModal({
+  show,
+  onClose,
+  onSaved,
+  editingExpenseId,
+  createExpenseMutation,
+  initialData,
+}: Props) {
   if (!show) return null;
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
@@ -18,7 +28,9 @@ export default function ExpenseCategoryModal({ show, onClose, onSaved, id }: Pro
     <div
       className="modal fade show"
       style={{
-        display: "block",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         backgroundColor: "rgba(0,0,0,0.5)",
         position: "fixed",
         top: 0,
@@ -26,7 +38,7 @@ export default function ExpenseCategoryModal({ show, onClose, onSaved, id }: Pro
         width: "100vw",
         height: "100vh",
         zIndex: 1050,
-        overflowY: "auto",
+        padding: "1rem",
       }}
       onClick={onClose}
       aria-modal="true"
@@ -34,7 +46,7 @@ export default function ExpenseCategoryModal({ show, onClose, onSaved, id }: Pro
     >
       <div
         className="modal-dialog"
-        style={{ maxWidth: "500px", margin: "1.75rem auto" }}
+        style={{ maxWidth: "500px", width: "100%" }}
         onClick={stopPropagation}
       >
         <div
@@ -42,14 +54,15 @@ export default function ExpenseCategoryModal({ show, onClose, onSaved, id }: Pro
           style={{ backgroundColor: "white", padding: "1.5rem", borderRadius: "0.3rem" }}
         >
           <div className="modal-header">
-            <h5 className="modal-title">{id ? "Editar Categoria" : "Nova Categoria"}</h5>
+            <h5 className="modal-title">{editingExpenseId ? "Editar Despesa" : "Nova Despesa"}</h5>
             <button type="button" className="btn-close" aria-label="Close" onClick={onClose} />
           </div>
           <div className="modal-body">
-            <ExpenseCategoryForm
-              id={id}
+            <ExpenseForm
               onCancel={onClose}
               onSaved={onSaved}
+              createExpenseMutation={createExpenseMutation}
+              initialData={initialData}
             />
           </div>
         </div>

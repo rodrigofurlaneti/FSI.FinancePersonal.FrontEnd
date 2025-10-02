@@ -1,101 +1,224 @@
-// src/pages/Dashboard.tsx
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExpenseService } from "../service/expenseService";
+import { CategoryExpenseService } from "../service/categoryExpenseService";
 import ExpensesDonut from "../components/Charts/ExpensesDonut";
+import ExpenseCategoriesTable from "../components/Table/ExpensesCategoriesTable";
+import ExpenseTable from "../components/Table/ExpensesTable";
+import ExpenseCategoryModal from "../components/Modal/ExpenseCategoryModal";
+import ExpenseModal from "../components/Modal/ExpenseModal";
 import "../styles/dashboard.css";
-
-function parseExpenseDate(e: any): Date | null {
-  // tenta várias chaves comuns que o backend pode retornar
-  const dateStr = e.date ?? e.dueDate ?? e.createdAt ?? e.transactionDate;
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? null : d;
-}
+import type { CreateExpensePayload, Expense } from "../types/expense";
 
 export default function Dashboard() {
-  console.log("Dashboard renderizado");
+  const queryClient = useQueryClient();
 
-  const last30 = useQuery({
-    queryKey: ["expenses", "last30"],
-    queryFn: async () => {
-      const all = await ExpenseService.getAll();
-      console.log("Dados brutos recebidos:", all);
-
-      // filtrar últimos 30 dias
-      const from = new Date();
-      from.setDate(from.getDate() - 30);
-
-      const filtered = all.filter(e => {
-        const date = parseExpenseDate(e);
-        if (!date) {
-          console.warn("Data inválida ou ausente para item:", e);
-          return false;
-        }
-        return date >= from;
-      });
-
-      console.log("Despesas filtradas (últimos 30 dias):", filtered);
-      return filtered;
-    },
+  // Busca todas as despesas
+  const {
+    data: expenses = [],
+    isLoading: expensesLoading
+  } = useQuery<Expense[]>({
+    queryKey: ["expenses", "all"],
+    queryFn: () => ExpenseService.getAll(),
     retry: false
   });
 
-  if (last30.error) {
-    console.error("Erro ao carregar despesas:", last30.error);
-    return (
-      <div className="container py-4">
-        <div className="alert alert-danger">Erro ao carregar dados: {(last30.error as any)?.message || "Erro desconhecido"}</div>
-      </div>
-    );
-  }
+  // Busca categorias
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["expenseCategories", "all"],
+    queryFn: () => CategoryExpenseService.getAll(),
+    retry: false
+  });
 
-  const total30 = last30.data?.reduce((s, e) => s + (e.amount ?? 0), 0) ?? 0;
+  // Mutação para deletar categoria
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: number) => CategoryExpenseService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    }
+  });
+
+  // Mutação para deletar despesa
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (id: number) => ExpenseService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    }
+  });
+
+  // ✅ Mutação para criar despesa
+  const createExpenseMutation = useMutation<Expense, unknown, CreateExpensePayload>({
+    mutationFn: (newExpense) => ExpenseService.create(newExpense),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setShowExpenseModal(false);
+    }
+  });
+
+  // Estados para modais e edição
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | undefined>(undefined);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | undefined>(undefined);
+  const [initialExpenseData, setInitialExpenseData] = useState<Partial<CreateExpensePayload> | undefined>(undefined);
+
+  // Handlers para abrir modais
+  const handleEditCategory = (cat: any) => {
+    setEditingCategoryId(cat.id);
+    setShowCategoryModal(true);
+  };
+
+  const handleCreateCategory = () => {
+    setEditingCategoryId(undefined);
+    setShowCategoryModal(true);
+  };
+
+const handleEditExpense = async (expense: Expense) => {
+  // Se quiser, pode buscar dados completos via API aqui, por exemplo:
+  // const fullExpense = await ExpenseService.getById(expense.id);
+
+  setInitialExpenseData({
+    name: expense.name,
+    amount: expense.amount,
+    dueDate: expense.date, // ajuste se necessário para o formato esperado
+    description: expense.description ?? "",
+    expenseCategoryId: expense.categoryId ?? 0,
+  });
+
+  setEditingExpenseId(expense.id);
+  setShowExpenseModal(true);
+};
+
+const handleCreateExpense = () => {
+  setInitialExpenseData(undefined);
+  setEditingExpenseId(undefined);
+  setShowExpenseModal(true);
+};
+
+  // Callbacks após salvar
+  const onCategorySaved = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
+    await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    setShowCategoryModal(false);
+    setEditingCategoryId(undefined);
+  };
+
+  const handleExpenseSaved = () => {
+    createExpenseMutation.reset();
+    setShowExpenseModal(false);
+    queryClient.invalidateQueries({ queryKey: ["expenses"] });
+  };
+
+  // Calcula total das despesas
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount ?? 0), 0);
 
   return (
     <div className="container py-4">
-      <h2>Dashboard</h2>
-
       <div className="row g-3 my-3">
-        <div className="col-md-4">
+        {/* Total e Últimas Despesas */}
+        <div className="col-md-6">
+          <div className="card p-3 mb-3">
+            <div className="text-muted small">Total de Despesas</div>
+            <div className="h4">
+              {totalExpenses.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </div>
+            <button className="btn btn-primary" onClick={handleCreateExpense}>
+              Nova Despesa
+            </button>
+          </div>
+
           <div className="card p-3">
-            <div className="text-muted small">Despesas (30d)</div>
-            <div className="h4">{total30.toLocaleString(undefined, { style: "currency", currency: "BRL" })}</div>
+            <div className="text-muted small mb-2">Últimas Despesas</div>
+            {expensesLoading ? (
+              <div>Carregando gráfico...</div>
+            ) : (
+              <ExpensesDonut expenses={expenses} />
+            )}
           </div>
         </div>
 
-        <div className="col-md-8">
-          <div className="card p-3">
-            <h6>Distribuição por categoria (30d)</h6>
-            {last30.isLoading ? (
+        {/* Categorias */}
+        <div className="col-md-6">
+          <div className="card p-3 mb-3">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <div className="text-muted small">Categorias</div>
+                <div className="h4">{categories?.length ?? 0}</div>
+              </div>
+              <div>
+                <button className="btn btn-sm btn-primary" onClick={handleCreateCategory}>
+                  Nova categoria
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              {categoriesLoading ? (
+                <div>Carregando...</div>
+              ) : (
+                <ExpenseCategoriesTable
+                  items={categories ?? []}
+                  page={1}
+                  pageSize={5}
+                  total={categories?.length ?? 0}
+                  onEdit={handleEditCategory}
+                  onDelete={(id) => deleteCategoryMutation.mutate(id)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Despesas */}
+        <div className="col-md-12">
+          <div className="card p-3 mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <div className="text-muted small">Despesas</div>
+                <div className="h4">{expenses?.length ?? 0}</div>
+              </div>
+              <div>
+                <button className="btn btn-sm btn-primary" onClick={handleCreateExpense}>
+                  Nova despesa
+                </button>
+              </div>
+            </div>
+
+            {expensesLoading ? (
               <div>Carregando...</div>
-            ) : last30.data?.length ? (
-              <ExpensesDonut expenses={last30.data} />
             ) : (
-              <div className="text-muted">Nenhuma despesa nos últimos 30 dias.</div>
+              <ExpenseTable
+                items={expenses ?? []}
+                page={1}
+                pageSize={5}
+                total={expenses?.length ?? 0}
+                onEdit={handleEditExpense}
+                onDelete={(id) => deleteExpenseMutation.mutate(id)}
+              />
             )}
           </div>
         </div>
       </div>
 
-      <div className="card mt-3 p-3">
-        <h6>Últimas despesas</h6>
-        {last30.isLoading ? (
-          <div>Carregando últimas despesas...</div>
-        ) : last30.data?.length ? (
-          <ul>
-            {last30.data.slice(0, 5).map(e => (
-              <li key={e.id}>
-                {e.name ?? e.description ?? "Sem descrição"} -{" "}
-                {parseExpenseDate(e)?.toLocaleDateString() ?? "data inválida"} -{" "}
-                {(e.amount ?? 0).toLocaleString(undefined, { style: "currency", currency: "BRL" })}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="text-muted">Nenhuma despesa registrada.</div>
-        )}
-      </div>
+      {/* Modal para criar/editar categoria */}
+      <ExpenseCategoryModal
+        show={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onSaved={onCategorySaved}
+        id={editingCategoryId}
+      />
+
+      {/* Modal para criar/editar despesa */}
+      <ExpenseModal
+        show={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        onSaved={handleExpenseSaved}
+        editingExpenseId={editingExpenseId}
+        createExpenseMutation={createExpenseMutation}
+        initialData={initialExpenseData}
+      />
     </div>
   );
 }
