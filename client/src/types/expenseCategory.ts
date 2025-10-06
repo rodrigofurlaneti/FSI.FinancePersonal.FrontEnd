@@ -3,6 +3,7 @@ export type ExpenseCategory = {
   id: number;
   name: string;
   userId?: number | string | null;
+  iconId?: number | string | null;
 };
 
 export type PagedResult<T> = {
@@ -15,11 +16,13 @@ export type PagedResult<T> = {
 
 export type CreateExpenseCategoryPayload = {
   name: string;
+  iconId?: number | null;
   createdAtUserId?: number | null;
   updatedAtUserId?: number | null;
 };
 
 export type UpdateExpenseCategoryPayload = {
   name: string;
+  iconId?: number | null;
   updatedAtUserId?: number | null;
 };

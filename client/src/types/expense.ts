@@ -2,8 +2,8 @@ export type Expense = {
   id: number;
   name: string;
   amount: number;
-  date: string; 
-  categoryId?: number;
+  dueDate: string; 
+  expenseCategoryId?: number;
   description?: string | null;
   paidAt?: string | null;
   userId?: number;
