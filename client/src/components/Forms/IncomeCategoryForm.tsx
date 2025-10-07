@@ -1,9 +1,9 @@
-// src/components/Forms/ExpenseCategoryForm.tsx
+// src/components/Forms/IncomeCategoryForm.tsx
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CategoryExpenseService } from "../../service/categoryExpenseService";
+import { CategoryIncomeService } from "../../service/categoryIncomeService";
 import { IconService } from "../../service/iconService";
-import ExpenseCategoryFormContent from "../Content/ExpenseCategoryFormContent";
+import IncomeCategoryFormContent from "../Content/IncomeCategoryFormContent";
 
 type Props = {
   id?: number;
@@ -19,7 +19,7 @@ type IconItem = {
   title?: string | null;
 };
 
-export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
+export default function IncomeCategoryForm({ id, onSaved, onCancel }: Props) {
   const [name, setName] = useState("");
   const [iconId, setIconId] = useState<number | null>(null);
 
@@ -34,7 +34,7 @@ export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
   useEffect(() => {
     let mounted = true;
     if (id) {
-      CategoryExpenseService.getById(id)
+      CategoryIncomeService.getById(id)
         .then((cat) => {
           if (!mounted) return;
           setName(cat.name ?? "");
@@ -55,13 +55,13 @@ export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
     };
   }, [id]);
 
-  // Tipagem genérica: <TData, TError, TVariables>
+  // Tipagem genérica nas mutações: <TData, TError, TVariables>
   const createMutation = useMutation<
     unknown,
     Error,
     { name: string; iconId?: number | null }
   >({
-    mutationFn: (newCategory) => CategoryExpenseService.create(newCategory),
+    mutationFn: (newCategory) => CategoryIncomeService.create(newCategory),
     onSuccess: () => {
       onSaved();
     },
@@ -73,7 +73,7 @@ export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
     { id: number; name: string; iconId?: number | null }
   >({
     mutationFn: (updatedCategory) =>
-      CategoryExpenseService.update(updatedCategory.id, {
+      CategoryIncomeService.update(updatedCategory.id, {
         name: updatedCategory.name,
         iconId: updatedCategory.iconId,
       }),
@@ -82,7 +82,7 @@ export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
     },
   });
 
-  // usar os booleans isLoading de react-query v5 (mais seguro / type-safe)
+  // usar os booleans isLoading de react-query v5
   const isLoading = createMutation.isLoading || updateMutation.isLoading || iconsLoading;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,11 +96,11 @@ export default function ExpenseCategoryForm({ id, onSaved, onCancel }: Props) {
 
   if (iconsError) {
     console.warn("Falha ao carregar ícones");
-    // se quiser, você pode retornar um UI de erro aqui
+    // opcional: retornar UI de erro
   }
 
   return (
-    <ExpenseCategoryFormContent
+    <IncomeCategoryFormContent
       name={name}
       setName={setName}
       iconId={iconId}
