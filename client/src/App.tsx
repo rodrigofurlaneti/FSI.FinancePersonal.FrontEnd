@@ -1,15 +1,14 @@
-// src/App.tsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Logout from "./pages/Logout";
 import { useAuth } from "./contexts/AuthContext";
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { isAuthenticated } = useAuth();
+function ProtectedRoute({ children, isAuthenticated }: { children: React.ReactNode; isAuthenticated: boolean }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return children;
+  return <>{children}</>;
 }
 
 export default function App() {
@@ -17,29 +16,20 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/logout" element={<Logout />} />
 
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
             <Dashboard />
           </ProtectedRoute>
         }
       />
 
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-
+      <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

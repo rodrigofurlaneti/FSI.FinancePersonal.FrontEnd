@@ -129,6 +129,12 @@ export default function LoginForm({
           Esqueci minha senha
         </a>
       </div>
+
+      <div className="text-center mt-3">
+        <a className="small" href="/register">
+          Cadastrar
+        </a>
+      </div>
     </form>
   );
 }

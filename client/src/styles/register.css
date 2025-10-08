@@ -1,0 +1,135 @@
+.register-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 16px;
+  background: #ffffff;
+}
+
+/* Card do formulário */
+.register-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px 26px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  /* para dar sensação de espaço e centralização mesmo em telas grandes */
+}
+
+/* header visual */
+.register-logo {
+  width: 112px;
+  height: auto;
+  display: block;
+  margin: 0 auto 8px;
+}
+.brand {
+  font-weight: 600;
+  margin: 0;
+  font-size: 1.45rem;
+  text-align: center;
+}
+.brand .accent { color: #0ea5e9; }
+
+/* frase explicativa */
+.lead-muted {
+  color: #6b6b6b;
+  font-size: 0.95rem;
+  margin: 8px 0 18px;
+  text-align: center;
+}
+
+/* estilo "pill" dos inputs */
+.input-pill {
+  position: relative;
+}
+.input-pill .form-control {
+  border-radius: 30px;
+  padding-left: 18px; /* reduzido para ficar melhor com o label/icone */
+  height: 56px;
+  box-shadow: none;
+  border: 1px solid #e6e9ee;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  background: #fff;
+}
+
+/* floating label — ajusta para centralizar visualmente */
+.input-pill label {
+  left: 18px;
+  top: 12px;
+  pointer-events: none;
+  color: #7a7a7a;
+  font-weight: 500;
+}
+
+/* ao focar no input */
+.input-pill .form-control:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 6px 18px rgba(14,165,233,0.08);
+}
+
+/* ajuda a posicionar o icon dentro do label — se quiser usar icons absolutos */
+/* caso não esteja usando ícones absolutos, ignore */
+.input-pill label i {
+  margin-right: 8px;
+  color: #6b7280;
+}
+
+/* grupo com botão de olho */
+.input-group .toggle-eye {
+  border-radius: 28px;
+  width: 52px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e6e9ee;
+  background: #fff;
+}
+
+/* termo e links */
+.form-terms {
+  color: #6a6a6a;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* botão principal */
+.btn-register {
+  border-radius: 28px;
+  font-size: 1.02rem;
+  box-shadow: 0 8px 20px rgba(14,165,233,0.16);
+  padding: 12px 20px;
+}
+
+/* centraliza footer do card */
+.register-card .text-center.mt-3 {
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* mensagens de erro */
+#formSummary {
+  margin-bottom: 12px;
+}
+
+/* responsividade */
+@media (max-width: 480px) {
+  .register-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+  .register-logo { width: 96px; }
+  .input-pill .form-control { height: 52px; }
+  .input-group .toggle-eye { width: 48px; height: 52px; }
+}
+
+/* opção: coloca o card um pouco mais alto em telas muito grandes para estética */
+@media (min-width: 1200px) {
+  .register-card { transform: translateY(-6vh); }
+}
