@@ -7,6 +7,9 @@ import type { CreateRegisterPayload } from "../types/register";
 import "../styles/register.css";
 import logoRegister from "../images/logo-register.jpg";
 
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+
 export default function Register() {
   const navigate = useNavigate();
 
@@ -24,7 +27,6 @@ export default function Register() {
   const pwdRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    // auto-focus no campo nome ao montar a página
     nameRef.current?.focus();
   }, []);
 
@@ -46,7 +48,6 @@ export default function Register() {
     const errors = validate();
     if (errors.length > 0) {
       setSummaryMessages(errors);
-      // foca no primeiro campo inválido
       if (!name.trim()) nameRef.current?.focus();
       else if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) emailRef.current?.focus();
       else pwdRef.current?.focus();
@@ -63,13 +64,61 @@ export default function Register() {
 
     try {
       await RegisterService.create(payload);
+
+      // limpa mensagens e campos (opcional)
+      setSummaryMessages(null);
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+
+      // Mostra modal de sucesso para o usuário
+      await Swal.fire({
+        icon: "success",
+        title: "Cadastro realizado",
+        html: `<p>Usuário cadastrado com sucesso.</p>`,
+        confirmButtonText: "Ir para login",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+      });
+
+      // Após confirmar, navega para a tela de login
       navigate("/login", { replace: true, state: { registered: true } });
     } catch (err: any) {
       console.error("register error:", err);
-      const status = err?.status ?? err?.response?.status;
-      const message =
-        err?.message ?? err?.response?.data?.message ?? (status === 409 ? "Usuário já existe." : "Erro ao registrar.");
-      setSummaryMessages([message]);
+
+      const status = err?.response?.status ?? err?.status;
+      const dataMessage = err?.response?.data?.message ?? err?.message ?? null;
+      const defaultMsg = "Erro ao registrar. Tente novamente mais tarde.";
+
+      if (status === 409) {
+        const text = dataMessage ?? "O e-mail informado já está cadastrado.";
+        setSummaryMessages([text]);
+        emailRef.current?.focus();
+
+        Swal.fire({
+          icon: "warning",
+          title: "E-mail já cadastrado",
+          html: `<p>${text}</p>`,
+          showCancelButton: true,
+          confirmButtonText: "Ir para login",
+          cancelButtonText: "Fechar",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/login", { replace: true, state: { registered: false } });
+          }
+        });
+      } else {
+        const text = dataMessage ?? defaultMsg;
+        setSummaryMessages([text]);
+
+        Swal.fire({
+          icon: "error",
+          title: "Erro",
+          text,
+          confirmButtonText: "Fechar",
+        });
+      }
     } finally {
       setLoading(false);
     }

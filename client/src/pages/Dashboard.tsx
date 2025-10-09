@@ -244,7 +244,9 @@ const handleCreateIncome = () => {
             {expensesLoading ? (
               <div>Carregando gráfico...</div>
             ) : (
-              <ExpensesDonut expenses={expenses} />
+                <div style={{ width: "100%", maxWidth: 400, height: 300, margin: "0 auto" }}>
+                  <ExpensesDonut expenses={expenses} />
+                </div>
             )}
           </div>
         </div>
