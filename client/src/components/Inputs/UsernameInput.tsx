@@ -1,28 +1,36 @@
-// src/components/UsernameInput.tsx
 import React from "react";
 
-type Props = {
-  readonly value: string;
-  readonly onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  readonly inputRef: React.RefObject<HTMLInputElement | null>;
+type UsernameInputProps = {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  label: string;
+  placeholder: string;
 };
 
-export default function UsernameInput({ value, onChange, inputRef }: Props) {
+export default function UsernameInput({
+  value,
+  onChange,
+  inputRef,
+  label,
+  placeholder,
+}: UsernameInputProps) {
   return (
-    <div className="form-floating mb-3">
-      <input
-        ref={inputRef}
-        id="UsernameOrEmail"
-        className="form-control"
-        placeholder=" "
-        autoComplete="username"
-        required
-        value={value}
-        onChange={onChange}
-        aria-describedby="usernameHelp"
-      />
-      <label htmlFor="UsernameOrEmail">Usuário ou e-mail</label>
-      <div id="usernameHelp" className="form-text small">Enter username or email</div>
+    <div className="mb-3">
+      <div className="form-floating">
+        <input
+          id="usernameOrEmail"
+          type="text"
+          className="form-control"
+          value={value}
+          onChange={onChange}
+          ref={inputRef}
+          placeholder={placeholder}
+          required
+          autoComplete="username"
+        />
+        <label htmlFor="usernameOrEmail">{label}</label>
+      </div>
     </div>
   );
 }
